@@ -6,12 +6,16 @@
 :root{--blue:#123d70;--blue2:#1d65a6;--pale:#eaf3fc;--ink:#172b40;--muted:#6b7c8f;--line:#dce5ee;--green:#16834a;--red:#c43d3d}*{box-sizing:border-box}body{margin:0;background:#f3f6fa;color:var(--ink);font:14px system-ui,-apple-system,Segoe UI,Arial,sans-serif}.app{max-width:900px;margin:auto;padding:14px 14px 90px}.top{background:linear-gradient(135deg,#123d70,#2878b9);color:white;border-radius:18px;padding:20px;box-shadow:0 8px 24px #123d7025}.top small{opacity:.8}.top h1{font-size:22px;margin:5px 0}.top p{margin:0;opacity:.85}.tabs{display:flex;gap:7px;overflow:auto;margin:15px 0}.tab{border:1px solid var(--line);background:white;border-radius:10px;padding:10px 14px;white-space:nowrap;color:var(--blue);font-weight:650}.tab.active{background:var(--blue);color:white;border-color:var(--blue)}.panel{display:none}.panel.active{display:block}.card{background:white;border:1px solid var(--line);border-radius:15px;padding:15px;margin-bottom:12px;box-shadow:0 3px 12px #173b5d08}.card h2{font-size:16px;margin:0 0 13px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat{background:var(--pale);border-radius:12px;padding:13px}.stat span{display:block;color:var(--muted);font-size:12px}.stat b{display:block;font-size:20px;color:var(--blue);margin-top:4px}.field{margin:10px 0}.field label{display:block;font-size:12px;font-weight:700;color:#506276;margin-bottom:5px}input,select{width:100%;padding:11px 12px;border:1px solid #cbd7e2;border-radius:10px;font:inherit;background:#fff;color:var(--ink)}.row{display:flex;gap:9px;align-items:center}.row>*{flex:1;min-width:0}.btn{border:0;border-radius:10px;padding:12px 14px;background:var(--blue);color:white;font-weight:700;font:inherit;cursor:pointer}.btn.secondary{background:#eaf1f8;color:var(--blue)}.btn.green{background:var(--green)}.btn.red{background:#fff0f0;color:var(--red)}.btn:disabled{opacity:.5}.full{width:100%}.price-line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line)}.price-line:last-child{border:0}.muted{color:var(--muted)}.small{font-size:12px}.ticket{border:1px dashed #8495a7;border-radius:10px;padding:12px;margin:10px 0;background:white;text-align:center;break-inside:avoid}.ticket .brand{font-size:13px;font-weight:800;letter-spacing:.8px;color:var(--blue)}.ticket .num{font-size:17px;font-weight:900;margin:7px 0}.ticket .qr{width:118px;height:118px;object-fit:contain;margin:5px auto;display:block}.ticket .cut{border-top:1px dashed #aaa;margin:9px 0}.ticket p{margin:4px 0;font-size:11px}.ticket .type{font-weight:800;font-size:15px}.ticket-actions{display:flex;gap:8px}.ticket-actions button{flex:1}.list-item{padding:11px 0;border-bottom:1px solid var(--line)}.list-item:last-child{border:0}.notice{padding:11px;border-radius:10px;background:#fff7e6;color:#76500b;font-size:12px;line-height:1.5}.ok{background:#eaf8ef;color:#17633a}.danger{color:var(--red)}.empty{text-align:center;color:var(--muted);padding:20px}.hide{display:none!important}#printArea{display:none}
 @media(min-width:650px){.grid.stats{grid-template-columns:repeat(4,1fr)}}
 @media print{@page{size:58mm auto;margin:2mm}body{background:white}.app,.no-print{display:none!important}#printArea{display:block!important;width:54mm;margin:0 auto}.ticket{border:0;border-bottom:1px dashed #777;border-radius:0;padding:2mm 0 3mm;margin:0 0 2mm}.ticket .qr{width:27mm;height:27mm}.ticket .brand{font-size:10pt}.ticket .num{font-size:12pt}.ticket p{font-size:8pt}.ticket .type{font-size:10pt}.ticket .cut{margin:1.5mm 0}}
+
+#loginScreen{max-width:420px;margin:8vh auto;padding:24px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #123d7018}
+#loginScreen h2{color:var(--blue);margin:0 0 6px}#loginScreen .muted{line-height:1.5}
 </style></head><body>
 <div class="app">
 <header class="top"><small>APLIKASI LOKET • TIKET MASUK</small><h1 id="headerName">WISATA MANCING</h1><p id="headerAddress">Tempat wisata & pemancingan</p></header>
+<div class="row no-print" style="margin-top:10px"><div class="small muted" id="userInfo"></div><button class="btn secondary" id="logoutBtn" style="flex:0 0 auto">Keluar</button></div>
 <nav class="tabs no-print"><button class="tab active" data-tab="jual">Penjualan</button><button class="tab" data-tab="laporan">Laporan</button><button class="tab" data-tab="riwayat">Riwayat</button><button class="tab" data-tab="printer">Printer</button><button class="tab" data-tab="pengaturan">Pengaturan</button></nav>
 <section class="panel active" id="jual">
-<div class="grid stats"><div class="stat"><span>Tiket terjual hari ini</span><b id="todayTickets">0</b></div><div class="stat"><span>Transaksi hari ini</span><b id="todayTrx">0</b></div><div class="stat"><span>Pendapatan hari ini</span><b id="todayIncome">Rp0</b></div><div class="stat"><span>Status printer</span><b id="printerStatus" style="font-size:14px">Belum diuji</b></div></div>
+<div class="grid stats"><div class="stat"><span>Tiket terjual hari ini</span><b id="todayTickets">0</b></div><div class="stat"><span>Transaksi hari ini</span><b id="todayTrx">0</b></div><div class="stat" id="incomeStat"><span>Pendapatan hari ini</span><b id="todayIncome">Rp0</b></div><div class="stat"><span>Status printer</span><b id="printerStatus" style="font-size:14px">Belum diuji</b></div></div>
 <div class="card"><h2>Penjualan tiket baru</h2><div id="ticketInputs"></div><div class="price-line"><span>Total tiket</span><b id="qtyTotal">0</b></div><div class="price-line"><span>Total pembayaran</span><b id="grandTotal">Rp0</b></div><div class="row"><div class="field"><label>Metode pembayaran</label><select id="payment"><option>Tunai</option><option>Transfer</option><option>QRIS</option></select></div><div class="field"><label>Petugas loket</label><input id="cashier" placeholder="Nama petugas"></div></div><button class="btn green full" id="sellBtn">Simpan transaksi & buat tiket</button></div>
 <div class="card hide" id="createdCard"><h2>Transaksi berhasil dibuat</h2><div id="createdTickets"></div><div class="ticket-actions"><button class="btn" id="printCreated">Cetak tiket</button><button class="btn secondary" id="newSale">Transaksi baru</button></div><p class="muted small">Untuk mencetak ke RPP02N, gunakan jalur cetak pada menu Printer jika perangkat tidak mendukung BLE.</p></div>
 </section>
@@ -39,7 +43,7 @@ function printTickets(tickets){
  $('printArea').innerHTML=tickets.map(ticketHTML).join('');let imgs=[...$('printArea').querySelectorAll('img')];Promise.all(imgs.map(i=>i.complete?Promise.resolve():new Promise(r=>{i.onload=r;i.onerror=r}))).then(()=>{window.print()});
 }
 function renderCreated(){ $('createdTickets').innerHTML=lastTickets.map(t=>`<div class="list-item"><b>${esc(t.ticketNo)}</b> — ${esc(t.typeName)} <span class="muted">${money(t.price)}</span></div>`).join('');$('createdCard').classList.toggle('hide',!lastTickets.length);}
-$('sellBtn').onclick=()=>{let {q,total}=calcTotal();if(!q){alert('Masukkan jumlah tiket terlebih dahulu.');return}let now=new Date(),trxId=id('TRX'),payment=$('payment').value,cashier=$('cashier').value.trim(),tickets=[];types.forEach(type=>{let qty=Math.max(0,Math.floor(+(document.querySelector(`[data-qty="${CSS.escape(type.id)}"]`)||{}).value||0));for(let i=0;i<qty;i++){tickets.push({ticketNo:id('TKT'),typeId:type.id,typeName:type.name,price:type.price,date:now.toISOString(),dateText:now.toLocaleString('id-ID')})}});let sale={trxId,payment,cashier,date:now.toISOString(),total,qty:tickets.length,tickets};sales.unshift(sale);lastTickets=tickets;save();renderCreated();updateDashboard();renderHistory();$('createdCard').scrollIntoView({behavior:'smooth',block:'start'});};
+$('sellBtn').onclick=()=>{let {q,total}=calcTotal();if(!q){alert('Masukkan jumlah tiket terlebih dahulu.');return}let now=new Date(),trxId=id('TRX'),payment=$('payment').value,cashier=currentProfile?.name||currentProfile?.email||'Petugas',tickets=[];types.forEach(type=>{let qty=Math.max(0,Math.floor(+(document.querySelector(`[data-qty="${CSS.escape(type.id)}"]`)||{}).value||0));for(let i=0;i<qty;i++){tickets.push({ticketNo:id('TKT'),typeId:type.id,typeName:type.name,price:type.price,date:now.toISOString(),dateText:now.toLocaleString('id-ID')})}});let sale={trxId,payment,cashier,date:now.toISOString(),total,qty:tickets.length,tickets};sales.unshift(sale);lastTickets=tickets;save();if(window.AndroidFirebase)AndroidFirebase.saveSale(JSON.stringify(sale));renderCreated();updateDashboard();renderHistory();$('createdCard').scrollIntoView({behavior:'smooth',block:'start'});};
 $('printCreated').onclick=()=>printTickets(lastTickets);$('newSale').onclick=()=>{document.querySelectorAll('.qtyInput').forEach(x=>x.value=0);calcTotal();lastTickets=[];$('createdCard').classList.add('hide');window.scrollTo({top:0,behavior:'smooth'})};
 function updateDashboard(){let arr=sales.filter(s=>s.date.slice(0,10)===today());$('todayTickets').textContent=arr.reduce((a,s)=>a+s.qty,0);$('todayTrx').textContent=arr.length;$('todayIncome').textContent=money(arr.reduce((a,s)=>a+s.total,0));}
 function renderHistory(){let q=($('searchHistory').value||'').toLowerCase();let arr=sales.filter(s=>s.trxId.toLowerCase().includes(q));$('historyList').innerHTML=arr.length?arr.map(s=>`<div class="list-item"><div class="row"><div><b>${esc(s.trxId)}</b><div class="small muted">${new Date(s.date).toLocaleString('id-ID')} • ${esc(s.cashier||'Petugas tidak dicatat')}</div><div class="small">${s.qty} tiket • ${esc(s.payment)} • ${money(s.total)}</div></div><button class="btn secondary" data-reprint="${esc(s.trxId)}">Cetak ulang</button></div></div>`).join(''):'<div class="empty">Belum ada transaksi.</div>';document.querySelectorAll('[data-reprint]').forEach(b=>b.onclick=()=>{let s=sales.find(x=>x.trxId===b.dataset.reprint);if(s)printTickets(s.tickets)});}
@@ -57,5 +61,46 @@ $('bleConnect').onclick=async()=>{if(!navigator.bluetooth){$('bleMessage').textC
 $('testPrint').onclick=()=>{let t={ticketNo:'CONTOH-0001',typeName:'Tiket Mancing',price:25000,dateText:new Date().toLocaleString('id-ID')};printTickets([t])};
 window.onAndroidPrinterStatus=function(message,connected){$('bleMessage').textContent=message;$('printerStatus').textContent=connected?'Terhubung':'Belum terhubung'};
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));if(b.dataset.tab==='laporan')runReport();if(b.dataset.tab==='riwayat')renderHistory()});
-function init(){renderHeader();renderInputs();renderPriceSettings();updateDashboard();renderHistory();runReport()}init();
+
+let currentProfile=null;
+function applyRole(){
+  const admin=currentProfile.role==='admin';
+  $('userInfo').textContent=(currentProfile.name||currentProfile.email)+' • '+(admin?'Admin':'Petugas');
+  $('cashier').value=currentProfile.name||currentProfile.email||'Petugas';
+  $('cashier').readOnly=true;
+  document.querySelectorAll('[data-tab="laporan"],[data-tab="pengaturan"]').forEach(x=>x.classList.toggle('hide',!admin));
+  $('incomeStat').classList.toggle('hide',!admin);
+}
+function showMain(profile){
+  currentProfile=profile;
+  $('loginScreen').classList.add('hide');$('mainApp').classList.remove('hide');
+  applyRole();init();
+  if(window.AndroidFirebase)AndroidFirebase.loadSales();
+}
+$('loginBtn').onclick=()=>{
+  const email=$('loginEmail').value.trim(),password=$('loginPassword').value;
+  if(!email||!password){$('loginMessage').textContent='Masukkan email dan password.';return}
+  $('loginBtn').disabled=true;$('loginMessage').textContent='Memeriksa akun...';
+  if(window.AndroidFirebase)AndroidFirebase.login(email,password);
+  else {$('loginBtn').disabled=false;$('loginMessage').textContent='Login Firebase hanya tersedia melalui APK Android.'}
+};
+$('loginPassword').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginBtn').click()});
+window.onAuthResult=result=>{
+  $('loginBtn').disabled=false;
+  if(result.ok){showMain(result.profile)}
+  else $('loginMessage').textContent=result.message||'Login gagal.';
+};
+$('logoutBtn').onclick=()=>{if(window.AndroidFirebase)AndroidFirebase.logout();};
+window.onLogoutResult=()=>{currentProfile=null;$('mainApp').classList.add('hide');$('loginScreen').classList.remove('hide');$('loginPassword').value='';$('loginMessage').textContent='Anda sudah keluar.'};
+window.onCloudSales=result=>{
+  if(!result.ok){alert(result.message||'Gagal memuat data cloud.');return}
+  sales=Array.isArray(result.sales)?result.sales:[];
+  sales.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+  updateDashboard();renderHistory();runReport();
+};
+window.onCloudSaveResult=result=>{
+  if(!result.ok)alert('Transaksi tersimpan di HP, tetapi gagal disinkronkan: '+(result.message||'periksa koneksi'));
+};
+function init(){renderHeader();renderInputs();renderPriceSettings();updateDashboard();renderHistory();runReport()}
+
 </script></body></html>
