@@ -14,6 +14,10 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.Query
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.OutputStream
@@ -34,6 +38,10 @@ class MainActivity : Activity() {
     @Volatile private var printerName: String = ""
     private val requestBluetoothPermission = 4102
 
+    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val db: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
+    @Volatile private var signedProfile: JSONObject? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         webView = WebView(this)
@@ -44,7 +52,142 @@ class MainActivity : Activity() {
         webView.webChromeClient = WebChromeClient()
         webView.webViewClient = WebViewClient()
         webView.addJavascriptInterface(AndroidPrinterBridge(), "AndroidPrinter")
+        webView.addJavascriptInterface(AndroidFirebaseBridge(), "AndroidFirebase")
         webView.loadUrl("file:///android_asset/index.html")
+    }
+
+
+    private fun sendJs(functionName: String, payload: JSONObject) {
+        val json = payload.toString()
+        runOnUiThread {
+            webView.evaluateJavascript("window.$functionName && window.$functionName($json);", null)
+        }
+    }
+
+    inner class AndroidFirebaseBridge {
+        @JavascriptInterface
+        fun login(email: String, password: String) {
+            auth.signInWithEmailAndPassword(email.trim(), password)
+                .addOnSuccessListener { result ->
+                    val user = result.user
+                    if (user == null) {
+                        sendJs("onAuthResult", JSONObject().put("ok", false).put("message", "Akun tidak ditemukan."))
+                        return@addOnSuccessListener
+                    }
+                    db.collection("users").document(user.uid).get()
+                        .addOnSuccessListener { doc ->
+                            if (!doc.exists()) {
+                                auth.signOut()
+                                sendJs("onAuthResult", JSONObject().put("ok", false).put("message", "Profil pengguna belum dibuat di Firestore (users/${user.uid})."))
+                                return@addOnSuccessListener
+                            }
+                            val role = doc.getString("role") ?: ""
+                            val active = doc.getBoolean("active") ?: false
+                            if (!active || (role != "admin" && role != "petugas")) {
+                                auth.signOut()
+                                sendJs("onAuthResult", JSONObject().put("ok", false).put("message", "Akun belum aktif atau role tidak valid."))
+                                return@addOnSuccessListener
+                            }
+                            val profile = JSONObject()
+                                .put("uid", user.uid)
+                                .put("email", user.email ?: email)
+                                .put("name", doc.getString("name") ?: user.email ?: email)
+                                .put("role", role)
+                                .put("active", active)
+                            signedProfile = profile
+                            sendJs("onAuthResult", JSONObject().put("ok", true).put("profile", profile))
+                        }
+                        .addOnFailureListener { e ->
+                            auth.signOut()
+                            sendJs("onAuthResult", JSONObject().put("ok", false).put("message", "Gagal membaca profil Firestore: ${e.localizedMessage ?: "akses ditolak"}"))
+                        }
+                }
+                .addOnFailureListener { e ->
+                    sendJs("onAuthResult", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Login gagal. Periksa email dan password."))
+                }
+        }
+
+        @JavascriptInterface
+        fun logout() {
+            auth.signOut()
+            signedProfile = null
+            sendJs("onLogoutResult", JSONObject().put("ok", true))
+        }
+
+        @JavascriptInterface
+        fun saveSale(json: String) {
+            val user = auth.currentUser
+            val profile = signedProfile
+            if (user == null || profile == null) {
+                sendJs("onCloudSaveResult", JSONObject().put("ok", false).put("message", "Sesi login tidak ditemukan. Silakan keluar lalu login kembali."))
+                return
+            }
+            try {
+                val sale = JSONObject(json)
+                val trxId = sale.optString("trxId")
+                if (trxId.isBlank()) throw IllegalArgumentException("Nomor transaksi kosong.")
+                sale.put("uid", user.uid)
+                sale.put("userEmail", user.email ?: "")
+                sale.put("cashier", profile.optString("name", user.email ?: "Petugas"))
+                sale.put("createdAt", System.currentTimeMillis())
+                val data = saleToMap(sale)
+                data["serverCreatedAt"] = FieldValue.serverTimestamp()
+                db.collection("sales").document(trxId).set(data)
+                    .addOnSuccessListener {
+                        sendJs("onCloudSaveResult", JSONObject().put("ok", true).put("trxId", trxId))
+                    }
+                    .addOnFailureListener { e ->
+                        sendJs("onCloudSaveResult", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Firestore menolak penyimpanan."))
+                    }
+            } catch (e: Exception) {
+                sendJs("onCloudSaveResult", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Format transaksi tidak valid."))
+            }
+        }
+
+        @JavascriptInterface
+        fun loadSales() {
+            val user = auth.currentUser
+            val profile = signedProfile
+            if (user == null || profile == null) {
+                sendJs("onCloudSales", JSONObject().put("ok", false).put("message", "Belum login ke Firebase."))
+                return
+            }
+            var query: Query = db.collection("sales")
+            if (profile.optString("role") != "admin") {
+                query = query.whereEqualTo("uid", user.uid)
+            }
+            query.get()
+                .addOnSuccessListener { snapshot ->
+                    val arr = JSONArray()
+                    snapshot.documents.forEach { doc ->
+                        val map = doc.data ?: emptyMap<String, Any>()
+                        val obj = JSONObject(map)
+                        if (!obj.has("trxId")) obj.put("trxId", doc.id)
+                        arr.put(obj)
+                    }
+                    sendJs("onCloudSales", JSONObject().put("ok", true).put("sales", arr))
+                }
+                .addOnFailureListener { e ->
+                    sendJs("onCloudSales", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Gagal membaca transaksi Firestore."))
+                }
+        }
+    }
+
+    private fun saleToMap(json: JSONObject): HashMap<String, Any?> {
+        val result = HashMap<String, Any?>()
+        val keys = json.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            result[key] = jsonValue(json.get(key))
+        }
+        return result
+    }
+
+    private fun jsonValue(value: Any?): Any? = when (value) {
+        JSONObject.NULL -> null
+        is JSONObject -> saleToMap(value)
+        is JSONArray -> (0 until value.length()).map { jsonValue(value.get(it)) }
+        else -> value
     }
 
     private fun ensureBluetoothPermission(onGranted: (() -> Unit)? = null) {
