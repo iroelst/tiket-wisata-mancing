@@ -10,7 +10,15 @@
 #loginScreen{max-width:420px;margin:8vh auto;padding:24px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #123d7018}
 #loginScreen h2{color:var(--blue);margin:0 0 6px}#loginScreen .muted{line-height:1.5}
 </style></head><body>
-<div class="app">
+<section id="loginScreen">
+  <h2>Login Tiket Wisata</h2>
+  <p class="muted small">Masuk menggunakan akun Admin atau Petugas yang sudah terdaftar.</p>
+  <div class="field"><label>Email</label><input id="loginEmail" type="email" autocomplete="username" placeholder="email pengguna"></div>
+  <div class="field"><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Password"></div>
+  <button class="btn full" id="loginBtn">Masuk</button>
+  <p id="loginMessage" class="small muted" style="margin-bottom:0"></p>
+</section>
+<div class="app hide" id="mainApp">
 <header class="top"><small>APLIKASI LOKET • TIKET MASUK</small><h1 id="headerName">WISATA MANCING</h1><p id="headerAddress">Tempat wisata & pemancingan</p></header>
 <div class="row no-print" style="margin-top:10px"><div class="small muted" id="userInfo"></div><button class="btn secondary" id="logoutBtn" style="flex:0 0 auto">Keluar</button></div>
 <nav class="tabs no-print"><button class="tab active" data-tab="jual">Penjualan</button><button class="tab" data-tab="laporan">Laporan</button><button class="tab" data-tab="riwayat">Riwayat</button><button class="tab" data-tab="printer">Printer</button><button class="tab" data-tab="pengaturan">Pengaturan</button></nav>
@@ -99,7 +107,7 @@ window.onCloudSales=result=>{
   updateDashboard();renderHistory();runReport();
 };
 window.onCloudSaveResult=result=>{
-  if(!result.ok)alert('Transaksi tersimpan di HP, tetapi gagal disinkronkan: '+(result.message||'periksa koneksi'));
+  if(!result.ok)alert('GAGAL SIMPAN KE FIRESTORE. Transaksi hanya tersimpan di HP: '+(result.message||'periksa koneksi'));
 };
 function init(){renderHeader();renderInputs();renderPriceSettings();updateDashboard();renderHistory();runReport()}
 
