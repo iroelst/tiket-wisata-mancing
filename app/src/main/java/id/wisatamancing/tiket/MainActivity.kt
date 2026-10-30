@@ -15,6 +15,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.Query
@@ -226,6 +227,129 @@ class MainActivity : Activity() {
             } catch (e: Exception) {
                 sendJs("onCloudConfigSaveResult", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Format pengaturan tidak valid."))
             }
+        }
+
+        @JavascriptInterface
+        fun loadStaff() {
+            val user = auth.currentUser
+            val profile = signedProfile
+            if (user == null || profile == null || profile.optString("role") != "admin") {
+                sendJs("onStaffList", JSONObject().put("ok", false).put("message", "Hanya Admin yang dapat mengelola petugas."))
+                return
+            }
+            db.collection("users").get()
+                .addOnSuccessListener { snapshot ->
+                    val arr = JSONArray()
+                    snapshot.documents.forEach { doc ->
+                        val role = doc.getString("role") ?: ""
+                        if (role == "petugas") {
+                            arr.put(JSONObject()
+                                .put("uid", doc.id)
+                                .put("name", doc.getString("name") ?: "")
+                                .put("email", doc.getString("email") ?: "")
+                                .put("role", role)
+                                .put("active", doc.getBoolean("active") ?: false))
+                        }
+                    }
+                    sendJs("onStaffList", JSONObject().put("ok", true).put("staff", arr))
+                }
+                .addOnFailureListener { e ->
+                    sendJs("onStaffList", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Gagal memuat daftar petugas."))
+                }
+        }
+
+        @JavascriptInterface
+        fun createStaff(name: String, email: String, password: String) {
+            val profile = signedProfile
+            if (auth.currentUser == null || profile == null || profile.optString("role") != "admin") {
+                sendJs("onStaffActionResult", JSONObject().put("ok", false).put("message", "Hanya Admin yang dapat menambahkan petugas."))
+                return
+            }
+            val cleanName = name.trim()
+            val cleanEmail = email.trim()
+            if (cleanName.isBlank() || cleanEmail.isBlank() || password.length < 6) {
+                sendJs("onStaffActionResult", JSONObject().put("ok", false).put("message", "Nama dan email wajib diisi. Password minimal 6 karakter."))
+                return
+            }
+            try {
+                val secondaryApp = try {
+                    FirebaseApp.getInstance("staffCreator")
+                } catch (_: IllegalStateException) {
+                    FirebaseApp.initializeApp(applicationContext, FirebaseApp.getInstance().options, "staffCreator")
+                        ?: throw IllegalStateException("Tidak dapat menyiapkan Firebase untuk pembuatan akun.")
+                }
+                val secondaryAuth = FirebaseAuth.getInstance(secondaryApp)
+                secondaryAuth.createUserWithEmailAndPassword(cleanEmail, password)
+                    .addOnSuccessListener { result ->
+                        val newUser = result.user
+                        if (newUser == null) {
+                            sendJs("onStaffActionResult", JSONObject().put("ok", false).put("message", "Akun dibuat tetapi UID tidak terbaca."))
+                            return@addOnSuccessListener
+                        }
+                        val userData = hashMapOf<String, Any>(
+                            "name" to cleanName,
+                            "email" to cleanEmail,
+                            "role" to "petugas",
+                            "active" to true,
+                            "createdAt" to FieldValue.serverTimestamp(),
+                            "createdBy" to (auth.currentUser?.uid ?: "")
+                        )
+                        db.collection("users").document(newUser.uid).set(userData)
+                            .addOnSuccessListener {
+                                secondaryAuth.signOut()
+                                sendJs("onStaffActionResult", JSONObject().put("ok", true).put("message", "Akun petugas berhasil dibuat."))
+                                loadStaff()
+                            }
+                            .addOnFailureListener { e ->
+                                secondaryAuth.signOut()
+                                sendJs("onStaffActionResult", JSONObject().put("ok", false).put("message", "Akun Auth berhasil dibuat, tetapi profil Firestore gagal disimpan: ${e.localizedMessage ?: "akses ditolak"}. Hapus akun tanpa profil dari Authentication atau ulangi setelah Rules diperbaiki."))
+                            }
+                    }
+                    .addOnFailureListener { e ->
+                        secondaryAuth.signOut()
+                        sendJs("onStaffActionResult", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Gagal membuat akun petugas."))
+                    }
+            } catch (e: Exception) {
+                sendJs("onStaffActionResult", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Gagal menyiapkan Firebase Auth."))
+            }
+        }
+
+        @JavascriptInterface
+        fun updateStaff(uid: String, name: String, active: Boolean) {
+            val profile = signedProfile
+            if (auth.currentUser == null || profile == null || profile.optString("role") != "admin") {
+                sendJs("onStaffActionResult", JSONObject().put("ok", false).put("message", "Hanya Admin yang dapat mengubah petugas."))
+                return
+            }
+            if (uid.isBlank() || name.trim().isBlank()) {
+                sendJs("onStaffActionResult", JSONObject().put("ok", false).put("message", "Nama petugas tidak boleh kosong."))
+                return
+            }
+            db.collection("users").document(uid)
+                .update(mapOf("name" to name.trim(), "active" to active, "updatedAt" to FieldValue.serverTimestamp()))
+                .addOnSuccessListener {
+                    sendJs("onStaffActionResult", JSONObject().put("ok", true).put("message", if (active) "Petugas diaktifkan." else "Petugas dinonaktifkan."))
+                    loadStaff()
+                }
+                .addOnFailureListener { e ->
+                    sendJs("onStaffActionResult", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Gagal mengubah petugas."))
+                }
+        }
+
+        @JavascriptInterface
+        fun sendStaffPasswordReset(email: String) {
+            val profile = signedProfile
+            if (auth.currentUser == null || profile == null || profile.optString("role") != "admin") {
+                sendJs("onStaffActionResult", JSONObject().put("ok", false).put("message", "Hanya Admin yang dapat mengirim reset password."))
+                return
+            }
+            auth.sendPasswordResetEmail(email.trim())
+                .addOnSuccessListener {
+                    sendJs("onStaffActionResult", JSONObject().put("ok", true).put("message", "Email reset password dikirim ke ${email.trim()}."))
+                }
+                .addOnFailureListener { e ->
+                    sendJs("onStaffActionResult", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Gagal mengirim email reset password."))
+                }
         }
 
         @JavascriptInterface
