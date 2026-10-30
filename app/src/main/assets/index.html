@@ -23,7 +23,7 @@
 <div id="printArea"></div>
 <script>
 const $=id=>document.getElementById(id);const money=n=>'Rp'+Number(n||0).toLocaleString('id-ID');const today=()=>new Date().toLocaleDateString('en-CA');
-const defaultSettings={name:'WISATA MANCING',address:'Tempat wisata & pemancingan',ticketHeading:'TIKET MASUK WISATA',footer:'Terima kasih telah berkunjung. Selamat menikmati!'};
+const defaultSettings={name:'WISATA MANCING',address:'Tempat wisata & pemancingan',footer:'Terima kasih telah berkunjung.'};
 const defaultTypes=[{id:'dewasa',name:'Tiket Mancing',price:25000},{id:'anak',name:'Tiket Pendamping',price:10000}];
 let settings={...defaultSettings,...(JSON.parse(localStorage.getItem('tm_settings')||'null')||{})};let types=JSON.parse(localStorage.getItem('tm_types')||'null')||defaultTypes;let sales=JSON.parse(localStorage.getItem('tm_sales')||'[]');let lastTickets=[];let bleDevice=null,bleCharacteristic=null;
 function save(){localStorage.setItem('tm_settings',JSON.stringify(settings));localStorage.setItem('tm_types',JSON.stringify(types));localStorage.setItem('tm_sales',JSON.stringify(sales));}
