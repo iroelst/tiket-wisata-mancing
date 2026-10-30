@@ -145,6 +145,90 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun loadConfig() {
+            val user = auth.currentUser
+            val profile = signedProfile
+            if (user == null || profile == null) {
+                sendJs("onCloudConfig", JSONObject().put("ok", false).put("message", "Belum login ke Firebase."))
+                return
+            }
+            db.collection("settings").document("main").get()
+                .addOnSuccessListener { settingsDoc ->
+                    db.collection("ticket_types").get()
+                        .addOnSuccessListener { typeSnapshot ->
+                            val settingsObj = if (settingsDoc.exists()) JSONObject(settingsDoc.data ?: emptyMap<String, Any>()) else JSONObject()
+                            val typesArray = JSONArray()
+                            typeSnapshot.documents.forEach { doc ->
+                                val item = JSONObject(doc.data ?: emptyMap<String, Any>())
+                                if (!item.has("id")) item.put("id", doc.id)
+                                typesArray.put(item)
+                            }
+                            sendJs("onCloudConfig", JSONObject()
+                                .put("ok", true)
+                                .put("settingsExists", settingsDoc.exists())
+                                .put("typesExist", typeSnapshot.documents.isNotEmpty())
+                                .put("settings", settingsObj)
+                                .put("types", typesArray))
+                        }
+                        .addOnFailureListener { e ->
+                            sendJs("onCloudConfig", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Gagal memuat jenis tiket."))
+                        }
+                }
+                .addOnFailureListener { e ->
+                    sendJs("onCloudConfig", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Gagal memuat identitas wisata."))
+                }
+        }
+
+        @JavascriptInterface
+        fun saveConfig(settingsJson: String, typesJson: String) {
+            val user = auth.currentUser
+            val profile = signedProfile
+            if (user == null || profile == null || profile.optString("role") != "admin") {
+                sendJs("onCloudConfigSaveResult", JSONObject().put("ok", false).put("message", "Hanya Admin yang boleh mengubah pengaturan."))
+                return
+            }
+            try {
+                val settingsObject = JSONObject(settingsJson)
+                val typesArray = JSONArray(typesJson)
+                val settingsMap = saleToMap(settingsObject)
+                settingsMap["updatedBy"] = user.uid
+                settingsMap["updatedAt"] = FieldValue.serverTimestamp()
+
+                db.collection("ticket_types").get()
+                    .addOnSuccessListener { existing ->
+                        val batch = db.batch()
+                        batch.set(db.collection("settings").document("main"), settingsMap)
+                        val keepIds = mutableSetOf<String>()
+                        for (i in 0 until typesArray.length()) {
+                            val item = typesArray.getJSONObject(i)
+                            val typeId = item.optString("id").trim()
+                            if (typeId.isBlank()) continue
+                            keepIds.add(typeId)
+                            val typeMap = saleToMap(item)
+                            typeMap["updatedBy"] = user.uid
+                            typeMap["updatedAt"] = FieldValue.serverTimestamp()
+                            batch.set(db.collection("ticket_types").document(typeId), typeMap)
+                        }
+                        existing.documents.forEach { doc ->
+                            if (!keepIds.contains(doc.id)) batch.delete(doc.reference)
+                        }
+                        batch.commit()
+                            .addOnSuccessListener {
+                                sendJs("onCloudConfigSaveResult", JSONObject().put("ok", true).put("message", "Pengaturan berhasil disimpan ke Firestore."))
+                            }
+                            .addOnFailureListener { e ->
+                                sendJs("onCloudConfigSaveResult", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Firestore menolak perubahan."))
+                            }
+                    }
+                    .addOnFailureListener { e ->
+                        sendJs("onCloudConfigSaveResult", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Gagal memeriksa jenis tiket."))
+                    }
+            } catch (e: Exception) {
+                sendJs("onCloudConfigSaveResult", JSONObject().put("ok", false).put("message", e.localizedMessage ?: "Format pengaturan tidak valid."))
+            }
+        }
+
+        @JavascriptInterface
         fun loadSales() {
             val user = auth.currentUser
             val profile = signedProfile
