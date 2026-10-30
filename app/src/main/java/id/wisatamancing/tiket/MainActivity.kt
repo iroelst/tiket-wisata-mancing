@@ -130,34 +130,50 @@ class MainActivity : Activity() {
         val name = t.optString("typeName", "Tiket Masuk")
         val ticketNo = t.optString("ticketNo", "-")
         val dateText = t.optString("dateText", "")
-        val price = NumberFormat.getCurrencyInstance(Locale("id", "ID")).format(t.optDouble("price", 0.0)).replace(",00", "")
+        val price = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
+            .format(t.optDouble("price", 0.0)).replace(",00", "")
         val settingsName = t.optString("brand", "WISATA MANCING")
         val address = t.optString("address", "Tempat wisata & pemancingan")
-        val ticketHeading = t.optString("ticketHeading", "TIKET MASUK WISATA")
         val footer = t.optString("footer", "Terima kasih telah berkunjung")
+
         out.write(byteArrayOf(0x1B, 0x40)) // initialize
         out.write(byteArrayOf(0x1B, 0x61, 0x01)) // center
+
+        // Header: nama wisata dan alamat saja
         out.write(byteArrayOf(0x1B, 0x21, 0x18))
         line(out, settingsName)
         out.write(byteArrayOf(0x1B, 0x21, 0x00))
         line(out, address)
-        line(out, ticketHeading)
         line(out, "--------------------------------")
+
+        // Nama jenis tiket tepat di atas nomor tiket
         out.write(byteArrayOf(0x1B, 0x21, 0x10))
         line(out, name)
         out.write(byteArrayOf(0x1B, 0x21, 0x00))
         line(out, ticketNo)
         line(out, "--------------------------------")
+
+        // Informasi tiket
         out.write(byteArrayOf(0x1B, 0x61, 0x00))
         line(out, "Tanggal : $dateText")
         line(out, "Harga   : $price")
+
+        // QR Code
         out.write(byteArrayOf(0x1B, 0x61, 0x01))
         val qrValue = QRCodeWriter().encode(ticketNo, BarcodeFormat.QR_CODE, 220, 220)
         val bitmap = Bitmap.createBitmap(220, 220, Bitmap.Config.ARGB_8888)
-        for (y in 0 until 220) for (x in 0 until 220) bitmap.setPixel(x, y, if (qrValue[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        for (y in 0 until 220) {
+            for (x in 0 until 220) {
+                bitmap.setPixel(
+                    x, y,
+                    if (qrValue[x, y]) android.graphics.Color.BLACK
+                    else android.graphics.Color.WHITE
+                )
+            }
+        }
         printBitmap(out, bitmap)
         bitmap.recycle()
-        line(out, ticketNo)
+
         line(out, "Berlaku untuk satu orang")
         line(out, footer)
         line(out, "\n\n")
