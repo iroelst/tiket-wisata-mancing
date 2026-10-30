@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "101595086511",
+    "project_id": "tiket-wisata-mancing",
+    "storage_bucket": "tiket-wisata-mancing.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:101595086511:android:4d7c4619b89562b6b95e5a",
+        "android_client_info": {
+          "package_name": "id.wisatamancing.tiket"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0gfe3rsfW8Gk4TBtj3mh2Q8EG6e1EC1M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
