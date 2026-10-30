@@ -129,11 +129,11 @@ class MainActivity : Activity() {
     private fun printOneTicket(out: OutputStream, t: JSONObject) {
         val name = t.optString("typeName", "Tiket Masuk")
         val ticketNo = t.optString("ticketNo", "-")
-        val visitor = t.optString("visitor", "-").ifBlank { "-" }
         val dateText = t.optString("dateText", "")
         val price = NumberFormat.getCurrencyInstance(Locale("id", "ID")).format(t.optDouble("price", 0.0)).replace(",00", "")
         val settingsName = t.optString("brand", "WISATA MANCING")
         val address = t.optString("address", "Tempat wisata & pemancingan")
+        val ticketHeading = t.optString("ticketHeading", "TIKET MASUK WISATA")
         val footer = t.optString("footer", "Terima kasih telah berkunjung")
         out.write(byteArrayOf(0x1B, 0x40)) // initialize
         out.write(byteArrayOf(0x1B, 0x61, 0x01)) // center
@@ -141,7 +141,7 @@ class MainActivity : Activity() {
         line(out, settingsName)
         out.write(byteArrayOf(0x1B, 0x21, 0x00))
         line(out, address)
-        line(out, "TIKET MASUK WISATA")
+        line(out, ticketHeading)
         line(out, "--------------------------------")
         out.write(byteArrayOf(0x1B, 0x21, 0x10))
         line(out, name)
@@ -150,7 +150,6 @@ class MainActivity : Activity() {
         line(out, "--------------------------------")
         out.write(byteArrayOf(0x1B, 0x61, 0x00))
         line(out, "Tanggal : $dateText")
-        line(out, "Nama    : $visitor")
         line(out, "Harga   : $price")
         out.write(byteArrayOf(0x1B, 0x61, 0x01))
         val qrValue = QRCodeWriter().encode(ticketNo, BarcodeFormat.QR_CODE, 220, 220)
